@@ -1,16 +1,66 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  ScrollView,
+  Text,
+  View,
+  Image,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "../apis/ApiClient";
 
-export default function BookDetailScreen({ route }) {
-  const { id } = route.params; // Obtén el ID del libro desde los parámetros
+export default function BookDetailScreen({ route, navigation }) {
+  const { id } = route.params; // ID del libro pasado como parámetro
   const [book, setBook] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [bookmark, setBookmark] = useState(false);
 
+  // Función para inicializar el estado de favorito
+  const renderBookmark = async (bookId) => {
+    try {
+      const storedBookmarks = await AsyncStorage.getItem("bookmark");
+      const bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+      setBookmark(bookmarks.includes(bookId));
+    } catch (error) {
+      console.error("Error al cargar favoritos:", error.message);
+    }
+  };
+
+  // Guardar un libro como favorito
+  const saveBookmark = async (bookId) => {
+    try {
+      const storedBookmarks = await AsyncStorage.getItem("bookmark");
+      const bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+      if (!bookmarks.includes(bookId)) {
+        bookmarks.push(bookId);
+        await AsyncStorage.setItem("bookmark", JSON.stringify(bookmarks));
+        setBookmark(true); // Actualiza el estado local
+      }
+    } catch (error) {
+      console.error("Error al guardar favorito:", error.message);
+    }
+  };
+
+  // Eliminar un libro de favoritos
+  const removeBookmark = async (bookId) => {
+    try {
+      const storedBookmarks = await AsyncStorage.getItem("bookmark");
+      const bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+      const updatedBookmarks = bookmarks.filter((v) => v !== bookId);
+      await AsyncStorage.setItem("bookmark", JSON.stringify(updatedBookmarks));
+      setBookmark(false); // Actualiza el estado local
+    } catch (error) {
+      console.error("Error al eliminar favorito:", error.message);
+    }
+  };
+
+  // Fetch inicial para cargar detalles del libro
   useEffect(() => {
     const fetchBookDetails = async () => {
       try {
-        console.log(id);
         const bookResponse = await apiClient.get(`/books/${id}`);
         const response = bookResponse.data;
         setBook(response.data);
@@ -23,6 +73,30 @@ export default function BookDetailScreen({ route }) {
 
     fetchBookDetails();
   }, [id]);
+
+  // Inicializar estado de favorito al cargar
+  useEffect(() => {
+    if (!isLoading) {
+      renderBookmark(id);
+    }
+  }, [isLoading, id]);
+
+  // Configurar el ícono de favoritos en el encabezado
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => (bookmark ? removeBookmark(id) : saveBookmark(id))}
+        >
+          <Ionicons
+            name={bookmark ? "heart" : "heart-outline"}
+            size={24}
+            color={bookmark ? "red" : "black"}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, bookmark, id]);
 
   if (isLoading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
@@ -37,45 +111,47 @@ export default function BookDetailScreen({ route }) {
   }
 
   return (
-    <View style={styles.container}>
-      <Image source={{ uri: book.cover.url }} style={styles.cover} />
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <Text style={styles.title}>{book.title}</Text>
-      <Text style={styles.authors}>
-        {book.authors.length
-          ? book.authors.map((author) => author.name).join(", ")
-          : "Autor desconocido"}
-      </Text>
-      <Text style={styles.description}>
-        {book.description || "Sin descripción"}
-      </Text>
-    </View>
+      <View>
+        <Text style={styles.newsInfo}>
+          {book.authors.length
+            ? book.authors.map((author) => author.name).join(", ")
+            : "Autor desconocido"}
+        </Text>
+      </View>
+      <Image
+        source={{ uri: book.cover.url }}
+        style={styles.newsImg}
+        resizeMode="cover"
+      />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#fff",
   },
-  cover: {
-    width: "100%",
-    height: 300,
-    resizeMode: "cover",
-    marginBottom: 20,
+  contentContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  authors: {
     fontSize: 16,
-    color: "#777",
-    marginBottom: 10,
+    fontWeight: "600",
+    color: "#333",
+    marginVertical: 20,
+    letterSpacing: 0.6,
   },
-  description: {
-    fontSize: 14,
-    lineHeight: 20,
+  newsImg: {
+    width: "100%",
+    height: 300,
+    marginBottom: 20,
+    borderRadius: 10,
   },
 });

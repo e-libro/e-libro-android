@@ -1,10 +1,11 @@
 import { AuthProvider, useAuth } from "./app/contexts/AuthContext";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-
+import { TouchableOpacity } from "react-native";
 import LoginScreen from "./app/screens/LoginScreen";
-import HomeScreen from "./app/screens/HomeScreen";
 import BookDetailsScreen from "./app/screens/BookDetailsScreen";
+import TabNavigator from "./app/screens/TabNavigator";
+import { Ionicons } from "@expo/vector-icons";
 
 const Stack = createNativeStackNavigator();
 
@@ -22,29 +23,34 @@ export const Layout = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        {/* {authState.authenticated ? (
-          <Stack.Screen name="HomeScreen" component={HomeScreen} />
-        ) : (
-          <Stack.Screen name="LoginScreen" component={LoginScreen} />
-        )} */}
         {authState.authenticated ? (
           <>
             <Stack.Screen
-              name="HomeScreen"
-              component={HomeScreen}
-              options={{ title: "Inicio" }} // Opcional: Cambiar el título del encabezado
+              name="Tabs"
+              component={TabNavigator}
+              options={{ headerShown: false }} // Ocultar encabezado del Stack para las pestañas
             />
             <Stack.Screen
               name="BookDetailsScreen"
               component={BookDetailsScreen}
-              options={{ title: "Detalles del Libro" }} // Opcional: Cambiar el título del encabezado
+              options={({ navigation }) => ({
+                headerShown: true,
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={24} color="black" />
+                  </TouchableOpacity>
+                ),
+                title: "",
+              })}
             />
           </>
         ) : (
           <Stack.Screen
             name="LoginScreen"
             component={LoginScreen}
-            options={{ title: "Iniciar Sesión" }} // Opcional
+            options={{
+              headerShown: false,
+            }}
           />
         )}
       </Stack.Navigator>

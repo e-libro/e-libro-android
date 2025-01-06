@@ -87,7 +87,7 @@ export default function HomeScreen() {
 
     try {
       const response = await apiClient.get(
-        `/books?page=${currentPage}&limit=5&title=${filter}&author=${filter}`
+        `/books?page=${currentPage}&limit=10 &title=${filter}&author=${filter}`
       );
       const bookResponse = response.data;
 
@@ -147,19 +147,34 @@ export default function HomeScreen() {
       ? authors.map((author) => author.name).join(", ")
       : "Autor desconocido";
 
+    // return (
+    //   <TouchableOpacity
+    //     style={styles.card}
+    //     onPress={() => navigation.navigate("BookDetailsScreen", { id })}
+    //   >
+    //     <Image
+    //       source={{ uri: cover.url }}
+    //       style={styles.cover}
+    //       resizeMode="cover"
+    //     />
+    //     <View style={styles.info}>
+    //       <Text style={styles.title}>{title}</Text>
+    //       <Text style={styles.authors}>{authorNames}</Text>
+    //     </View>
+    //   </TouchableOpacity>
+    // );
+
     return (
       <TouchableOpacity
-        style={styles.card}
         onPress={() => navigation.navigate("BookDetailsScreen", { id })}
       >
-        <Image
-          source={{ uri: cover.url }}
-          style={styles.cover}
-          resizeMode="cover"
-        />
-        <View style={styles.info}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.authors}>{authorNames}</Text>
+        <View style={styles.itemContainer}>
+          <Image source={{ uri: cover.url }} style={styles.itemImg} />
+          <View style={styles.itemInfo}>
+            <Text style={styles.itemCategory}>{authorNames}</Text>
+            <Text style={styles.itemTitle}>{title}</Text>
+            <Text style={styles.itemSourceName}>{item.language}</Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -199,7 +214,8 @@ export default function HomeScreen() {
         data={books}
         keyExtractor={(book) => book.guid}
         renderItem={renderBook}
-        contentContainerStyle={styles.list}
+        // contentContainerStyle={styles.list}
+
         // Si no está cargando y la lista está vacía, muestra mensaje
         ListEmptyComponent={() =>
           !isLoading && books.length === 0 ? (
@@ -214,13 +230,15 @@ export default function HomeScreen() {
         }
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
+        initialNumToRender={10}
+        windowSize={10}
       />
     </View>
   );
 }
 
 // Estilos
-const styles = StyleSheet.create({
+const styles1 = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -286,5 +304,60 @@ const styles = StyleSheet.create({
   },
   feather: {
     marginRight: 10,
+  },
+});
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  itemContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+    flex: 1,
+    gap: 3,
+  },
+  itemImg: {
+    width: 70,
+    height: 80,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  itemInfo: {
+    flex: 1,
+    gap: 5,
+    justifyContent: "space-between",
+  },
+  itemTitle: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#333",
+  },
+  itemCategory: {
+    fontSize: 12,
+    color: "#666",
+    textTransform: "capitalize",
+  },
+  ItemTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333",
+  },
+  itemSourceInfo: {
+    flexDirection: "row",
+    gap: 0,
+    alignItems: "center",
+  },
+  itemSourceImg: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  itemSourceName: {
+    fontSize: 10,
+    fontWeight: "400",
+    color: "#666",
   },
 });
