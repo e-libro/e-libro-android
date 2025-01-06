@@ -10,8 +10,10 @@ export default function BookDetailScreen({ route }) {
   useEffect(() => {
     const fetchBookDetails = async () => {
       try {
-        const response = await apiClient.get(`/books/${id}`);
-        setBook(response.data.book);
+        console.log(id);
+        const bookResponse = await apiClient.get(`/books/${id}`);
+        const response = bookResponse.data;
+        setBook(response.data);
       } catch (error) {
         console.error("Error al cargar detalles del libro:", error.message);
       } finally {

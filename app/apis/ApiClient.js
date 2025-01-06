@@ -1,9 +1,10 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-const API_URL = "http://10.128.2.11:8083/v1/";
+const API_URL = "http://192.168.100.248:8083/v1/";
 
 export const ACCESS_TOKEN_KEY = "my-jwt-access-token";
+export const REFRESH_TOKEN_KEY = "my-jwt-refresh-token";
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -13,9 +14,11 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+    const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
 
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
+      config.headers["x-refresh-token"] = `${refreshToken}`;
     }
 
     return config;
@@ -37,17 +40,20 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshResponse = await apiClient.post(
-          "/auth/refresh",
-          {},
-          { withCredentials: true }
-        );
+        const response = await apiClient.post("/auth/mobile-refresh");
+
+        const refreshResponse = response.data;
+
+        console.log(refreshResponse.data.data);
 
         const { accessToken } = refreshResponse.data;
+        const { refreshToken } = refreshResponse.data;
 
         await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+        await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
 
-        originalRequest.headers["Authorization"] = `Bearer ${accessToken}`;
+        originalRequest.headers["authorization"] = `Bearer ${accessToken}`;
+        originalRequest.headers["x-refresh-token"] = `${refreshToken}`;
 
         return apiClient(originalRequest);
       } catch (e) {

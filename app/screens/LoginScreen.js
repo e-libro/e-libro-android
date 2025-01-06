@@ -8,10 +8,7 @@ export default function LoginScreen() {
   const { onSignin } = useAuth();
 
   const signin = async () => {
-    const response = await onSignin(
-      "alfredo.ernesto.arias@gmail.com",
-      "123456@aM"
-    );
+    const response = await onSignin("a@a.a", "123456@aM");
 
     if (response && response.error) {
       console.log(response.message);

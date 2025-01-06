@@ -4,130 +4,146 @@ import {
   View,
   Text,
   Image,
-  Button,
+  TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   TextInput,
-  TouchableOpacity,
 } from "react-native";
 import Feather from "react-native-vector-icons/Feather";
 import { useNavigation } from "@react-navigation/native";
-import apiClient from "../apis/ApiClient";
+import apiClient from "../apis/ApiClient"; // Ajusta la ruta según tu estructura
 import uuid from "react-native-uuid";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function HomeScreen() {
-  const [books, setBooks] = useState([]); // Libros cargados
+  const [books, setBooks] = useState([]); // Lista de libros
   const [page, setPage] = useState(1); // Página actual
-  const [isLoading, setIsLoading] = useState(false); // Estado de carga
-  const [hasMore, setHasMore] = useState(true); // Indica si hay más libros por cargar
-  const [totalPages, setTotalPages] = useState(1); // Total de páginas
-  const [filter, setFilter] = useState(""); // Filtro por autor
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true); // Si quedan más páginas por cargar
+  const [totalPages, setTotalPages] = useState(1); // Total de páginas disponibles
+  const [filter, setFilter] = useState(""); // Texto para filtrar (título/autor)
 
-  const { onSignout } = useAuth(); // Función para cerrar sesión
-
+  const { onSignout } = useAuth();
   const navigation = useNavigation();
 
-  // Cierra la sesión del usuario
+  // Cerrar sesión
   const signout = () => {
     onSignout();
   };
 
-  // Aplica los filtros de búsqueda
+  /**
+   * Aplica el filtro: reinicia la lista (books = []), regresa a la página 1,
+   * habilita hasMore (por si la búsqueda tiene múltiples páginas),
+   * y llama a la API para la primera página filtrada.
+   */
   const applyFilter = async () => {
-    setBooks([]); // Reinicia la lista de libros
-    setPage(1); // Reinicia la página
-    setHasMore(false); // Habilita la carga de más libros
+    setBooks([]);
+    setPage(1);
+    setHasMore(true);
+    setIsLoading(true);
 
     try {
       const response = await apiClient.get(
-        `/books?page=1&limit=5&title=${filter}&authors=${filter}`
+        `/books?page=1&limit=5&title=${filter}&author=${filter}`
       );
+      const bookResponse = response.data;
 
-      console.log(JSON.stringify(response.data, null, 2));
-
-      if (response.data && response.data.books) {
-        const booksWithGUID = response.data.books.map((b) => ({
+      if (bookResponse?.data?.documents?.length) {
+        const booksWithGUID = bookResponse.data.documents.map((b) => ({
           ...b,
           guid: uuid.v4(),
         }));
-
         setBooks(booksWithGUID);
-        setTotalPages(response.data.totalPages);
-        setPage(response.data.page);
+
+        setTotalPages(bookResponse.data.totalPages);
+        setPage(bookResponse.data.page);
+
+        // Verificamos si hay más páginas
+        if (bookResponse.data.page < bookResponse.data.totalPages) {
+          setHasMore(true);
+        } else {
+          setHasMore(false);
+        }
       } else {
+        // Si no hay resultados, bloqueamos la carga infinita
         setHasMore(false);
       }
     } catch (error) {
       console.error("Error al aplicar filtros:", error.message);
+      setHasMore(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Carga libros según la página actual
+  /**
+   * Carga libros de la página indicada (currentPage).
+   * Concatena con el estado anterior de 'books' para lograr efecto de scroll infinito.
+   */
   const loadBooks = async (currentPage) => {
-    if (isLoading || !hasMore) return; // Evita múltiples solicitudes
-    setIsLoading(true); // Inicia el estado de carga
+    if (isLoading || !hasMore) return; // Evita múltiples solicitudes simultáneas
+
+    setIsLoading(true);
 
     try {
       const response = await apiClient.get(
-        `/books?page=${currentPage}&limit=5&title=${filter}&authors=${filter}`
+        `/books?page=${currentPage}&limit=5&title=${filter}&author=${filter}`
       );
-      // const response = await apiClient.get(books?page=${currentPage});
+      const bookResponse = response.data;
 
-      if (response.data && response.data.books) {
-        const booksWithGUID = response.data.books.map((b) => ({
+      if (bookResponse?.data?.documents?.length) {
+        const booksWithGUID = bookResponse.data.documents.map((b) => ({
           ...b,
-          guid: uuid.v4(), // Genera un UUID único para cada libro
+          guid: uuid.v4(),
         }));
 
-        setBooks((prevBooks) => [...prevBooks, ...booksWithGUID]); // Agrega nuevos libros
-        setTotalPages(response.data.totalPages); // Actualiza el total de páginas
-        setPage(response.data.page); // Actualiza la página actual
-        console.log("Libros cargados:", books.length);
+        // Concatena nuevos libros con los que ya existen en el estado
+        setBooks((prevBooks) => [...prevBooks, ...booksWithGUID]);
+
+        setTotalPages(bookResponse.data.totalPages);
+        setPage(bookResponse.data.page);
+
+        // Revisa si quedan más páginas
+        if (bookResponse.data.page < bookResponse.data.totalPages) {
+          setHasMore(true);
+        } else {
+          setHasMore(false);
+        }
       } else {
         setHasMore(false);
       }
     } catch (error) {
+      console.error("Error al cargar libros:", error.message);
       setHasMore(false);
-
-      if (error.response) {
-        console.error(
-          // No hay más datos
-          `Error en la solicitud (status ${error.response.status}):`,
-          error.response.data
-        );
-      } else if (error.request) {
-        console.error(
-          "Error en la solicitud, sin respuesta del servidor:",
-          error.request
-        );
-      } else {
-        console.error("Error al configurar la solicitud:", error.message);
-      }
     } finally {
-      setIsLoading(false); // Termina el estado de carga
+      setIsLoading(false);
     }
   };
 
-  //   Actualiza libros al cambiar de página
+  /**
+   * Cada vez que 'page' cambie, loadBooks() se ejecuta para cargar esa página.
+   * De esta forma, un único lugar controla la lógica de cargar más libros.
+   */
   useEffect(() => {
     loadBooks(page);
   }, [page]);
 
-  // Manejador para cargar más libros
+  /**
+   * Manejador para FlatList: cuando se llega al final,
+   * incrementa la página (si hay más páginas).
+   */
   const handleLoadMore = () => {
-    if (page < totalPages && !isLoading) {
+    if (!isLoading && page < totalPages) {
       setPage((prevPage) => prevPage + 1);
-      loadBooks(page + 1);
     }
   };
 
-  // // Renderiza cada libro como una tarjeta
+  /**
+   * Renderiza cada libro como una tarjeta con portada, título y autores.
+   */
   const renderBook = ({ item }) => {
     const { id, title, authors, cover } = item;
-    const authorNames = authors.length
+    const authorNames = authors?.length
       ? authors.map((author) => author.name).join(", ")
       : "Autor desconocido";
 
@@ -151,12 +167,14 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Encabezado con botón para cerrar sesión */}
       <View style={styles.view}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()}>
-          <Text style={styles.text}>Hola Alfredo Arias</Text>
+        <TouchableOpacity onPress={signout}>
+          <Text style={styles.text}>Cerrar</Text>
         </TouchableOpacity>
       </View>
 
+      {/* Barra de búsqueda */}
       <View style={{ marginTop: 20, padding: 20 }}>
         <View style={styles.inputContainer}>
           <Feather
@@ -169,34 +187,39 @@ export default function HomeScreen() {
             style={styles.textInput}
             placeholder="Buscar libros por autor o título..."
             placeholderTextColor="#c6c6c6"
+            value={filter}
             onChangeText={(text) => setFilter(text)}
             onSubmitEditing={applyFilter}
           />
         </View>
       </View>
 
+      {/* Lista de libros con scroll infinito */}
       <FlatList
-        data={books} // Asegúrate de que sea un array
-        keyExtractor={(book) => book.guid} // Usa GUID como clave única
+        data={books}
+        keyExtractor={(book) => book.guid}
         renderItem={renderBook}
         contentContainerStyle={styles.list}
+        // Si no está cargando y la lista está vacía, muestra mensaje
         ListEmptyComponent={() =>
-          !isLoading && books && books.length === 0 ? (
+          !isLoading && books.length === 0 ? (
             <Text style={styles.emptyText}>
               No se encontraron libros con ese autor o título.
             </Text>
           ) : null
         }
+        // Spinner cuando se está cargando
         ListFooterComponent={
-          isLoading && <ActivityIndicator size="large" color="#0000ff" />
+          isLoading ? <ActivityIndicator size="large" color="#0000ff" /> : null
         }
         onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5} // Carga más cuando alcanza el 50% del final
+        onEndReachedThreshold={0.5}
       />
     </View>
   );
 }
 
+// Estilos
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -238,48 +261,30 @@ const styles = StyleSheet.create({
     color: "#555",
     marginTop: 20,
   },
-  input: {
-    height: 40,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  filterButton: {
-    backgroundColor: "#007bff",
-    padding: 10,
-    borderRadius: 5,
-    alignItems: "center",
+  view: {
+    flexDirection: "row",
     marginBottom: 20,
+    justifyContent: "space-between",
   },
-  filterButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
+  text: {
+    fontSize: 16,
   },
-
   inputContainer: {
     flexDirection: "row",
-    alignItems: "center", // Alinea verticalmente el icono y el TextInput
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#c6c6c6",
     borderRadius: 8,
     paddingHorizontal: 10,
-    height: 40, // Define la altura del contenedor
+    height: 40,
     marginBottom: 20,
   },
   textInput: {
-    flex: 1, // Ocupa el espacio restante
+    flex: 1,
     fontSize: 16,
     color: "#000",
   },
   feather: {
     marginRight: 10,
-  },
-
-  view: {
-    flexDirection: "row",
-    marginBottom: 20,
-    justifyContent: "space-between",
   },
 });
