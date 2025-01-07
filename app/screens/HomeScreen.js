@@ -76,12 +76,8 @@ export default function HomeScreen() {
     }
   };
 
-  /**
-   * Carga libros de la página indicada (currentPage).
-   * Concatena con el estado anterior de 'books' para lograr efecto de scroll infinito.
-   */
   const loadBooks = async (currentPage) => {
-    if (isLoading || !hasMore) return; // Evita múltiples solicitudes simultáneas
+    if (isLoading || !hasMore) return;
 
     setIsLoading(true);
 

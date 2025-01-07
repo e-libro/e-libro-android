@@ -4,13 +4,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   FlatList,
+  TouchableOpacity,
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "../apis/ApiClient";
 import { useIsFocused } from "@react-navigation/native";
 
-const BookshelfScreen = () => {
+const BookshelfScreen = ({ navigation }) => {
   const [bookmarkItems, setBookmarkItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const isFocused = useIsFocused();
@@ -69,12 +70,17 @@ const BookshelfScreen = () => {
       data={bookmarkItems}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
-        <View style={styles.bookItem}>
+        <TouchableOpacity
+          style={styles.bookItem}
+          onPress={() => {
+            navigation.navigate("BookContentScreen", { bookId: item.id });
+          }}
+        >
           <Text style={styles.title}>{item.title}</Text>
           <Text style={styles.author}>
             {item.authors.map((author) => author.name).join(", ")}
           </Text>
-        </View>
+        </TouchableOpacity>
       )}
       contentContainerStyle={styles.listContainer}
     />

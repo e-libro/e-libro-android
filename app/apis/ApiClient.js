@@ -8,7 +8,9 @@ export const REFRESH_TOKEN_KEY = "my-jwt-refresh-token";
 
 const apiClient = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+  headers: {
+    "Cache-Control": "no-cache", // Desactiva el uso de la caché en todas las solicitudes
+  },
 });
 
 apiClient.interceptors.request.use(

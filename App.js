@@ -6,6 +6,7 @@ import LoginScreen from "./app/screens/LoginScreen";
 import BookDetailsScreen from "./app/screens/BookDetailsScreen";
 import TabNavigator from "./app/screens/TabNavigator";
 import { Ionicons } from "@expo/vector-icons";
+import BookContentScreen from "./app/screens/BookContentScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +34,19 @@ export const Layout = () => {
             <Stack.Screen
               name="BookDetailsScreen"
               component={BookDetailsScreen}
+              options={({ navigation }) => ({
+                headerShown: true,
+                headerLeft: () => (
+                  <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={24} color="black" />
+                  </TouchableOpacity>
+                ),
+                title: "",
+              })}
+            />
+            <Stack.Screen
+              name="BookContentScreen"
+              component={BookContentScreen}
               options={({ navigation }) => ({
                 headerShown: true,
                 headerLeft: () => (

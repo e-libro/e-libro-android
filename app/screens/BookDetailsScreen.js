@@ -11,14 +11,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import apiClient from "../apis/ApiClient";
+import * as FileSystem from "expo-file-system";
 
 export default function BookDetailScreen({ route, navigation }) {
-  const { id } = route.params; // ID del libro pasado como parámetro
+  const { id } = route.params;
   const [book, setBook] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [bookmark, setBookmark] = useState(false);
 
-  // Función para inicializar el estado de favorito
   const renderBookmark = async (bookId) => {
     try {
       const storedBookmarks = await AsyncStorage.getItem("bookmark");
@@ -29,35 +29,79 @@ export default function BookDetailScreen({ route, navigation }) {
     }
   };
 
-  // Guardar un libro como favorito
   const saveBookmark = async (bookId) => {
     try {
       const storedBookmarks = await AsyncStorage.getItem("bookmark");
       const bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+
       if (!bookmarks.includes(bookId)) {
         bookmarks.push(bookId);
         await AsyncStorage.setItem("bookmark", JSON.stringify(bookmarks));
-        setBookmark(true); // Actualiza el estado local
+        setBookmark(true);
+        alert("Libro guardado en favoritos");
+
+        if (book && book.content && book.content.url) {
+          console.log("Descargando contenido del libro...");
+          const fileUri = FileSystem.documentDirectory + `book_${bookId}.txt`;
+
+          try {
+            await FileSystem.downloadAsync(book.content.url, fileUri);
+            console.log(`Libro descargado en: ${fileUri}`);
+
+            const fileInfo = await FileSystem.getInfoAsync(fileUri);
+
+            if (fileInfo.exists) {
+              console.log("El archivo fue guardado correctamente.");
+              alert("Contenido del libro descargado y validado.");
+            } else {
+              console.error("El archivo no se guardó correctamente.");
+              alert("Error: El contenido del libro no se guardó.");
+            }
+          } catch (error) {
+            console.error(
+              "Error al descargar el contenido del libro:",
+              error.message
+            );
+            alert("Error al descargar el contenido del libro.");
+          }
+        }
       }
     } catch (error) {
       console.error("Error al guardar favorito:", error.message);
     }
   };
 
-  // Eliminar un libro de favoritos
   const removeBookmark = async (bookId) => {
     try {
       const storedBookmarks = await AsyncStorage.getItem("bookmark");
       const bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
       const updatedBookmarks = bookmarks.filter((v) => v !== bookId);
       await AsyncStorage.setItem("bookmark", JSON.stringify(updatedBookmarks));
-      setBookmark(false); // Actualiza el estado local
+      setBookmark(false);
+      alert("Libro eliminado de favoritos");
+
+      const fileUri = FileSystem.documentDirectory + `book_${bookId}.txt`;
+
+      try {
+        const fileInfo = await FileSystem.getInfoAsync(fileUri);
+
+        if (fileInfo.exists) {
+          await FileSystem.deleteAsync(fileUri);
+          console.log(`Archivo eliminado: ${fileUri}`);
+          alert("Contenido del libro eliminado del disco.");
+        } else {
+          console.log("El archivo no existe, no se necesita eliminar.");
+          alert("No se encontró contenido para eliminar.");
+        }
+      } catch (error) {
+        console.error("Error al eliminar el archivo del libro:", error.message);
+        alert("Error al intentar eliminar el contenido del libro.");
+      }
     } catch (error) {
       console.error("Error al eliminar favorito:", error.message);
     }
   };
 
-  // Fetch inicial para cargar detalles del libro
   useEffect(() => {
     const fetchBookDetails = async () => {
       try {
