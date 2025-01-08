@@ -19,7 +19,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.alfredoarias.elibroandroid"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -27,8 +28,16 @@
     "plugins": [
       "expo-secure-store",
       "expo-router",
-      "expo-sqlite",
-      "expo-asset"
-    ]
+      "expo-asset",
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "2e82dbd7-427b-4a50-8352-7c8e17d1eed3"
+      }
+    }
+
   }
 }

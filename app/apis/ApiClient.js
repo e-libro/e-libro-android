@@ -1,13 +1,11 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 
-const API_URL = "http://192.168.100.248:8083/v1/";
-
 export const ACCESS_TOKEN_KEY = "my-jwt-access-token";
 export const REFRESH_TOKEN_KEY = "my-jwt-refresh-token";
 
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: process.env.EXPO_PUBLIC_API_URL,
   headers: {
     "Cache-Control": "no-cache", // Desactiva el uso de la caché en todas las solicitudes
   },

@@ -23,13 +23,7 @@ export default function HomeScreen() {
   const [totalPages, setTotalPages] = useState(1); // Total de páginas disponibles
   const [filter, setFilter] = useState(""); // Texto para filtrar (título/autor)
 
-  const { onSignout } = useAuth();
   const navigation = useNavigation();
-
-  // Cerrar sesión
-  const signout = () => {
-    onSignout();
-  };
 
   /**
    * Aplica el filtro: reinicia la lista (books = []), regresa a la página 1,
@@ -143,23 +137,6 @@ export default function HomeScreen() {
       ? authors.map((author) => author.name).join(", ")
       : "Autor desconocido";
 
-    // return (
-    //   <TouchableOpacity
-    //     style={styles.card}
-    //     onPress={() => navigation.navigate("BookDetailsScreen", { id })}
-    //   >
-    //     <Image
-    //       source={{ uri: cover.url }}
-    //       style={styles.cover}
-    //       resizeMode="cover"
-    //     />
-    //     <View style={styles.info}>
-    //       <Text style={styles.title}>{title}</Text>
-    //       <Text style={styles.authors}>{authorNames}</Text>
-    //     </View>
-    //   </TouchableOpacity>
-    // );
-
     return (
       <TouchableOpacity
         onPress={() => navigation.navigate("BookDetailsScreen", { id })}
@@ -178,13 +155,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Encabezado con botón para cerrar sesión */}
-      <View style={styles.view}>
-        <TouchableOpacity onPress={signout}>
-          <Text style={styles.text}>Cerrar</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* Barra de búsqueda */}
       <View style={{ marginTop: 20, padding: 20 }}>
         <View style={styles.inputContainer}>
@@ -305,8 +275,8 @@ const styles1 = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: 10,
+    paddingTop: 10,
   },
   itemContainer: {
     flexDirection: "row",
@@ -355,5 +325,33 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "400",
     color: "#666",
+  },
+  //
+
+  view: {
+    flexDirection: "row",
+    marginBottom: 5,
+    justifyContent: "space-between",
+  },
+  text: {
+    fontSize: 16,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#c6c6c6",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    height: 40,
+    marginBottom: 5,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#000",
+  },
+  feather: {
+    marginRight: 5,
   },
 });

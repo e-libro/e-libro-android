@@ -8,8 +8,8 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import apiClient from "../apis/ApiClient";
 import { useIsFocused } from "@react-navigation/native";
+import { Ionicons } from "react-native-vector-icons";
 
 const BookshelfScreen = ({ navigation }) => {
   const [bookmarkItems, setBookmarkItems] = useState([]);
@@ -18,34 +18,38 @@ const BookshelfScreen = ({ navigation }) => {
 
   useEffect(() => {
     if (isFocused) {
-      fetchBookmark();
+      fetchBookmarks();
     }
   }, [isFocused]);
 
-  const fetchBookmark = async () => {
+  const fetchBookmarks = async () => {
     try {
       setIsLoading(true);
+
+      // Obtiene los favoritos desde AsyncStorage
       const storedBookmarks = await AsyncStorage.getItem("bookmark");
-      const bookmarkedIds = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+      const bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
 
-      if (bookmarkedIds.length === 0) {
-        setBookmarkItems([]);
-        setIsLoading(false);
-        return;
-      }
-
-      const fetchBooks = await Promise.all(
-        bookmarkedIds.map(async (id) => {
-          const response = await apiClient.get(`/books/${id}`);
-          return response.data.data;
-        })
-      );
-
-      setBookmarkItems(fetchBooks);
+      // Configura los datos obtenidos
+      setBookmarkItems(bookmarks);
     } catch (error) {
-      console.error("Error fetching bookmarks:", error.message);
+      console.error("Error al cargar los libros guardados:", error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const removeBookmark = async (bookId) => {
+    try {
+      const storedBookmarks = await AsyncStorage.getItem("bookmark");
+      const bookmarks = storedBookmarks ? JSON.parse(storedBookmarks) : [];
+
+      const updatedBookmarks = bookmarks.filter((b) => b.id !== bookId);
+      await AsyncStorage.setItem("bookmark", JSON.stringify(updatedBookmarks));
+      setBookmarkItems(updatedBookmarks);
+      alert("Libro eliminado del librero");
+    } catch (error) {
+      console.error("Error al eliminar el libro:", error.message);
     }
   };
 
@@ -70,17 +74,22 @@ const BookshelfScreen = ({ navigation }) => {
       data={bookmarkItems}
       keyExtractor={(item) => item.id.toString()}
       renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.bookItem}
-          onPress={() => {
-            navigation.navigate("BookContentScreen", { bookId: item.id });
-          }}
-        >
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.author}>
-            {item.authors.map((author) => author.name).join(", ")}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.bookItem}>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("BookContentScreen", { bookId: item.id });
+            }}
+          >
+            <Text style={styles.title}>{item.title}</Text>
+            <Text style={styles.author}>{item.authors}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => removeBookmark(item.id)}
+            style={styles.deleteButton}
+          >
+            <Ionicons name="trash" size={20} color="#ff0000" />
+          </TouchableOpacity>
+        </View>
       )}
       contentContainerStyle={styles.listContainer}
     />
@@ -106,7 +115,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   bookItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
+    marginHorizontal: 8, // Reduce los márgenes en los lados
     padding: 16,
     backgroundColor: "#f9f9f9",
     borderRadius: 8,
@@ -125,6 +138,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 4,
+  },
+  deleteButton: {
+    padding: 8,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
 });
 

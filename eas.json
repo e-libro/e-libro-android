@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 14.3.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.e-libro.app/v1/"
+      }
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true, 
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.e-libro.app/v1/"
+      }
+
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

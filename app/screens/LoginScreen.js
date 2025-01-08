@@ -8,6 +8,7 @@ export default function LoginScreen() {
   const { onSignin } = useAuth();
 
   const signin = async () => {
+    console.log(`API_URL: ${process.env.EXPO_PUBLIC_API_URL}`);
     const response = await onSignin("a@a.a", "123456@aM");
 
     if (response && response.error) {
